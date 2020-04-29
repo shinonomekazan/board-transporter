@@ -50,6 +50,10 @@ module.exports = {
 		// overloadで使うし同一名はTypeScriptでチェックするので重複許可
 		"no-dupe-class-members": "off",
 		"no-underscore-dangle": ["error", {"allowAfterThis": true}],
+		"import/extensions": "off",
+		"no-undef": "off",
+		"no-await-in-loop": "off",
+		"no-plusplus": "off"
 	},
 	parser: "@typescript-eslint/parser",
 	parserOptions: {

@@ -1,15 +1,9 @@
-import * as types from "./types";
-import Driver from "./Driver";
 import * as Octokit from "@octokit/rest";
+import * as types from "./types";
+import * as utils from "./utils";
+import Driver from "./Driver";
 
 type ListColumns = Octokit.Octokit.ProjectsListColumnsResponse;
-
-function wait(ms: number): Promise<void> {
-	if (ms === 0) return Promise.resolve();
-	return new Promise((resolve) => {
-		setTimeout(resolve, ms);
-	});
-}
 
 interface ParsedProjectUrl {
 	type: "repository" | "orgs" | "users";
@@ -21,6 +15,7 @@ interface ParsedProjectUrl {
 
 export default class implements Driver {
 	readonly client: Octokit.Octokit;
+
 	readonly wait: number;
 
 	constructor(tokenOrClient: string | Octokit.Octokit, wait: number) {
@@ -38,13 +33,13 @@ export default class implements Driver {
 	async copyBoard(params: types.CopyBoardParameters): Promise<types.CopyBoardResult> {
 		const sourceProject = await this.findProjectByParsedUrl(this.parseUrl(params.sourceUrl));
 		const desitinationProject = await this.findProjectByParsedUrl(this.parseUrl(params.destinationUrl));
-		await wait(this.wait);
-		const result:  types.CopyBoardResult = {
-		}
+		await utils.wait(this.wait);
+		const result: types.CopyBoardResult = {
+		};
 		const sourceColumns = await this.client.projects.listColumns({
 			project_id: sourceProject.id,
 		});
-		await wait(this.wait);
+		await utils.wait(this.wait);
 		const destinationColumns = await this.client.projects.listColumns({
 			project_id: desitinationProject.id,
 		});
@@ -77,7 +72,7 @@ export default class implements Driver {
 					}
 				}
 			}
-			await wait(this.wait);
+			await utils.wait(this.wait);
 		}
 		console.log(`copy finished! (${registeredCardCount} card copied)`);
 		return result;
@@ -94,7 +89,7 @@ export default class implements Driver {
 			});
 			for (let j = 0; j < cards.data.length; j++) {
 				const card = cards.data[j];
-				await wait(this.wait);
+				await utils.wait(this.wait);
 				const contentIdOrClosed = await this.getContentIdOrClosed(card);
 				if (contentIdOrClosed === true) continue;
 				if (destinationColumnOrNull == null) {
@@ -104,7 +99,7 @@ export default class implements Driver {
 					result.push({
 						columnId: destinationColumnOrNull.id,
 						type: "card",
-						note: card.note
+						note: card.note,
 					});
 				} else {
 					result.push({
@@ -114,7 +109,7 @@ export default class implements Driver {
 					});
 				}
 			}
-			await wait(this.wait);
+			await utils.wait(this.wait);
 		}
 		return result;
 	}
