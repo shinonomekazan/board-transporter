@@ -27,6 +27,10 @@ async function executeCopyAction(options: types.GitHubExecutorOptions) {
 		};
 		console.log(`copy ${params.sourceUrl} to ${params.destinationUrl}`);
 		// TODO: driverを直接実行しているけど本当はこうじゃない方がいいかな
+		if (options.checkRateLimit) {
+			const rateLimit = await driver.getRateLimit();
+			console.log("dump rate limit", rateLimit);
+		}
 		await driver.copyBoard(params);
 	} catch (error) {
 		console.error(error);
@@ -36,9 +40,10 @@ async function executeCopyAction(options: types.GitHubExecutorOptions) {
 	}
 }
 
-export async function run(argv: string[]) {
+export function run(argv: string[]) {
 	// Note: あとでdriver option追加してもいい
 	commander
+		.version(require("../package.json").version)
 		.option("-t, --token <access token>", "GitHub access token")
 		.option("-w, --wait <wait>", "Wait time per command execution (milliseconds)")
 		.command("copy <source> <destination>")
@@ -55,6 +60,9 @@ export async function run(argv: string[]) {
 			executeCopyAction(options);
 		});
 	commander.parse(argv);
+	if (commander.args.length === 0) {
+		commander.help();
+	}
 }
 
 class PromiseWrapper {

@@ -9,12 +9,12 @@
     "lint": "eslint -c ./.eslintrc.js --ext .ts src/",
     "lint:fix": "eslint -c ./.eslintrc.js --ext .ts src/ --fix",
     "test": "npm run lint",
-    "start": "npm run build && node bin/run"
+    "start": "npm run build && node bin/board-transporter copy https://github.com/users/tsugehara/projects/2 https://github.com/users/tsugehara/projects/4"
   },
   "author": "Shinonomekazan Co., Ltd.",
   "license": "MIT",
   "bin": {
-    "board-template": "./bin/run"
+    "board-transporter": "./bin/board-transporter"
   },
   "dependencies": {
     "@octokit/rest": "^16.35.0",
