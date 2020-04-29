@@ -9,7 +9,7 @@
     "lint": "eslint -c ./.eslintrc.js --ext .ts src/",
     "lint:fix": "eslint -c ./.eslintrc.js --ext .ts src/ --fix",
     "test": "npm run lint",
-    "start": "npm run build && node bin/board-transporter copy https://github.com/users/tsugehara/projects/2 https://github.com/users/tsugehara/projects/4"
+    "start": "npm run build && node bin/board-transporter"
   },
   "author": "Shinonomekazan Co., Ltd.",
   "license": "MIT",
