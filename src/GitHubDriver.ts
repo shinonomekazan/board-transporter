@@ -73,10 +73,12 @@ export default class implements Driver {
 			} else {
 				try {
 					// Note: v4系もやってみたけど結局同じ
-					// await this.newClient.createProjectIssue(
-					// 	card.columnNodeId,
-					// 	card.contentNodeId!,
-					// );
+					/*
+					await this.newClient.createProjectIssue(
+						card.columnNodeId,
+						card.contentNodeId!,
+					);
+					*/
 					await this.client.projects.createCard({
 						column_id: card.columnId,
 						content_id: card.contentId,
@@ -268,15 +270,14 @@ export default class implements Driver {
 				archived_state: "all",
 			});
 			console.log(cards.data);
-
 		}
 	}
 
 	// for debug method
 	async testCreateCard(owner: string, repo: string, columnId: number, issueNumber: number) {
 		const issue = await this.client.issues.get({
-			owner: owner,
-			repo: repo,
+			owner,
+			repo,
 			issue_number: issueNumber,
 		});
 		await this.client.projects.createCard({
