@@ -9,7 +9,7 @@
     "lint": "eslint -c ./.eslintrc.js --ext .ts src/",
     "lint:fix": "eslint -c ./.eslintrc.js --ext .ts src/ --fix",
     "test": "npm run lint",
-    "start": "npm run build && node bin/board-transporter"
+    "start": "npm run build && node bin/board-transporter copy https://github.com/orgs/kamitsubaki-city/projects/11 https://github.com/orgs/kamitsubaki-city/projects/12"
   },
   "author": "Shinonomekazan Co., Ltd.",
   "license": "MIT",
@@ -20,11 +20,13 @@
     "@octokit/rest": "^16.35.0",
     "@types/commander": "^2.12.2",
     "commander": "^4.0.1",
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "node-fetch": "^2.6.0"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.0",
     "@types/node": "^12.12.9",
+    "@types/node-fetch": "^2.5.7",
     "@typescript-eslint/eslint-plugin": "^2.8.0",
     "@typescript-eslint/parser": "^2.8.0",
     "del-cli": "^3.0.0",

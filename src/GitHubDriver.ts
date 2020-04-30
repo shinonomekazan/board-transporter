@@ -2,6 +2,7 @@ import * as Octokit from "@octokit/rest";
 import * as types from "./types";
 import * as utils from "./utils";
 import Driver from "./Driver";
+import GitHubClient from "./GitHubClient";
 
 type ListColumns = Octokit.Octokit.ProjectsListColumnsResponse;
 
@@ -13,8 +14,18 @@ interface ParsedProjectUrl {
 	projectNumber: number;
 }
 
+interface CardStatus {
+	type: "card" | "issue";
+	isClosed: boolean;
+	contentId?: number;
+	contentNodeId?: string;
+	title?: string;
+}
+
 export default class implements Driver {
 	readonly client: Octokit.Octokit;
+
+	readonly newClient: GitHubClient;
 
 	readonly wait: number;
 
@@ -24,8 +35,10 @@ export default class implements Driver {
 			this.client = new Octokit.Octokit({
 				auth: tokenOrClient,
 			});
+			this.newClient = new GitHubClient(tokenOrClient);
 		} else {
 			this.client = tokenOrClient;
+			throw new Error("unsupported");
 		}
 		this.wait = wait;
 	}
@@ -49,6 +62,7 @@ export default class implements Driver {
 		let registeredCardCount = 0;
 		for (let i = 0; i < cards.length; i++) {
 			const card = cards[i];
+			console.log("register card", card.type, card.title, card.columnId, card.contentId, card.contentNodeId);
 			if (card.type === "card") {
 				// TODO: destination column内に同一のnoteがあるかを見て重複チェックをしてもいいが、今はやってない
 				await this.client.projects.createCard({
@@ -58,6 +72,13 @@ export default class implements Driver {
 				registeredCardCount++;
 			} else {
 				try {
+					// Note: v4系もやってみたけど結局同じ
+					/*
+					await this.newClient.createProjectIssue(
+						card.columnNodeId,
+						card.contentNodeId!,
+					);
+					*/
 					await this.client.projects.createCard({
 						column_id: card.columnId,
 						content_id: card.contentId,
@@ -65,6 +86,7 @@ export default class implements Driver {
 					});
 					registeredCardCount++;
 				} catch (error) {
+					console.log("== regist error", error);
 					if (error.name === "HttpError" && error.status === 422) {
 						// この場合、既に登録済なのでスルーする
 					} else {
@@ -90,22 +112,26 @@ export default class implements Driver {
 			for (let j = 0; j < cards.data.length; j++) {
 				const card = cards.data[j];
 				await utils.wait(this.wait);
-				const contentIdOrClosed = await this.getContentIdOrClosed(card);
-				if (contentIdOrClosed === true) continue;
+				const cardStatus = await this.getCardStatus(card);
+				if (cardStatus.isClosed) continue;
 				if (destinationColumnOrNull == null) {
 					throw new Error(`Column ${sourceColumn.name} not found`);
 				}
-				if (contentIdOrClosed === false) {
+				if (cardStatus.type === "card") {
 					result.push({
 						columnId: destinationColumnOrNull.id,
+						columnNodeId: destinationColumnOrNull.node_id,
 						type: "card",
 						note: card.note,
 					});
 				} else {
 					result.push({
 						columnId: destinationColumnOrNull.id,
+						columnNodeId: destinationColumnOrNull.node_id,
 						type: "issue",
-						contentId: contentIdOrClosed,
+						title: cardStatus.title!,
+						contentId: cardStatus.contentId!,
+						contentNodeId: cardStatus.contentNodeId!,
 					});
 				}
 			}
@@ -114,12 +140,18 @@ export default class implements Driver {
 		return result;
 	}
 
-	async getContentIdOrClosed(card: Octokit.Octokit.ProjectsGetCardResponse) {
+	async getCardStatus(card: Octokit.Octokit.ProjectsGetCardResponse): Promise<CardStatus> {
 		if (card.archived) {
-			return true;
+			return {
+				isClosed: true,
+				type: "card",
+			};
 		}
 		if (card.content_url == null) {
-			return false;
+			return {
+				isClosed: false,
+				type: "card",
+			};
 		}
 		const parsedUrl = this.parseContentUrl(card.content_url);
 		const issue = await this.client.issues.get({
@@ -128,9 +160,21 @@ export default class implements Driver {
 			issue_number: parsedUrl.number,
 		});
 		if (issue.data.state === "closed") {
-			return true;
+			return {
+				isClosed: true,
+				title: issue.data.title,
+				contentId: issue.data.id,
+				contentNodeId: issue.data.node_id,
+				type: "issue",
+			};
 		}
-		return issue.data.id;
+		return {
+			isClosed: false,
+			title: issue.data.title,
+			contentId: issue.data.id,
+			contentNodeId: issue.data.node_id,
+			type: "issue",
+		};
 	}
 
 	async findProjectByParsedUrl(parsedUrl: ParsedProjectUrl) {
@@ -207,5 +251,39 @@ export default class implements Driver {
 			core: rateLimit.data.resources.core,
 			rate: rateLimit.data.rate,
 		};
+	}
+
+	// for debug
+	async dumpProject(projectId: number) {
+		const project = await this.client.projects.get({
+			project_id: projectId,
+		});
+		console.log(project.data);
+		const columns = await this.client.projects.listColumns({
+			project_id: projectId,
+		});
+		console.log(columns.data);
+		for (let i = 0; i < columns.data.length; i++) {
+			const column = columns.data[i];
+			const cards = await this.client.projects.listCards({
+				column_id: column.id,
+				archived_state: "all",
+			});
+			console.log(cards.data);
+		}
+	}
+
+	// for debug method
+	async testCreateCard(owner: string, repo: string, columnId: number, issueNumber: number) {
+		const issue = await this.client.issues.get({
+			owner,
+			repo,
+			issue_number: issueNumber,
+		});
+		await this.client.projects.createCard({
+			column_id: columnId,
+			content_id: issue.data.id,
+			content_type: "Issue",
+		});
 	}
 }
