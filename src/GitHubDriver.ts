@@ -60,6 +60,8 @@ export default class implements Driver {
 		const cards = await this.getTargetCards(sourceColumns.data, destinationColumns.data);
 		console.log(`copy cards.. (target card count: ${cards.length})`);
 		let registeredCardCount = 0;
+		// 逆順にしてから登録しないと順番が逆になってしまうのでreverseしておく
+		cards.reverse();
 		for (let i = 0; i < cards.length; i++) {
 			const card = cards[i];
 			console.log("register card", card.type, card.title, card.columnId, card.contentId, card.contentNodeId);
