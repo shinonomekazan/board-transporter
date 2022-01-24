@@ -21,7 +21,7 @@
     "@types/commander": "^2.12.2",
     "commander": "^4.0.1",
     "dotenv": "^8.2.0",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^3.1.1"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.0",
